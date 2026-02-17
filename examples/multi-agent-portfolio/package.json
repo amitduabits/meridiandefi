@@ -1,0 +1,23 @@
+{
+  "name": "@meridian/example-multi-agent-portfolio",
+  "version": "0.1.0",
+  "description": "Meridian demo — 3-agent collaborative portfolio management",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@meridian/sdk": "workspace:*",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "license": "MIT"
+}

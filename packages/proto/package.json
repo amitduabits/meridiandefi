@@ -1,0 +1,13 @@
+{
+  "name": "@meridian/proto",
+  "version": "0.1.0",
+  "description": "Meridian protobuf schemas for agent communication",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'proto build placeholder'"
+  },
+  "dependencies": {
+    "protobufjs": "^7.4.0"
+  },
+  "license": "MIT"
+}

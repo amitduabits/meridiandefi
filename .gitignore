@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+out/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Foundry
+packages/contracts/cache/
+packages/contracts/out/
+packages/contracts/broadcast/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Turbo
+.turbo/
+
+# Logs
+*.log
+logs/
+
+# Misc
+.cache/
+tmp/
+nul
+
+# Claude Code
+.claude/
+CLAUDE.md
+CLAUDE_2.md
+meridian-roadmap.md

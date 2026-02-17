@@ -1,0 +1,12 @@
+{
+  "name": "@meridian/contracts",
+  "version": "0.1.0",
+  "description": "Meridian smart contracts — AgentRegistry, PaymentEscrow, StrategyVault",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test -vvv --gas-report",
+    "clean": "forge clean"
+  },
+  "license": "MIT"
+}
