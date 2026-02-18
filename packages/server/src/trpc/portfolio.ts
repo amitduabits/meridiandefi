@@ -30,9 +30,15 @@ async function rpcCall(rpcUrl: string, method: string, params: unknown[]): Promi
 }
 
 function hexToDecimal(hex: string, decimals: number): number {
-  const wei = BigInt(hex);
-  const divisor = BigInt(10 ** decimals);
-  return Number((wei * 10_000n) / divisor) / 10_000;
+  // Guard against empty hex from non-existent ERC-20 contracts on testnet.
+  if (!hex || hex === "0x" || hex.length <= 2) return 0;
+  try {
+    const wei = BigInt(hex);
+    const divisor = BigInt(10 ** Math.min(decimals, 18));
+    return Number((wei * 10_000n) / divisor) / 10_000;
+  } catch {
+    return 0;
+  }
 }
 
 async function fetchOnChainBalances(): Promise<Array<{
@@ -42,24 +48,37 @@ async function fetchOnChainBalances(): Promise<Array<{
   if (!rpcUrl) return null;
 
   try {
-    const balances = await Promise.all(
+    // allSettled so one missing/broken token doesn't abort the whole call
+    const results = await Promise.allSettled(
       ARB_SEPOLIA_TOKENS.map(async (token) => {
         let rawBalance: string;
         if (token.address === "0x0000000000000000000000000000000000000000") {
           rawBalance = await rpcCall(rpcUrl, "eth_getBalance", [AGENT_WALLET, "latest"]);
         } else {
           // ERC-20 balanceOf(address)
-          const data = `0x70a08231${AGENT_WALLET.slice(2).toLowerCase().padStart(64, "0")}`;
+          const calldata = `0x70a08231${AGENT_WALLET.slice(2).toLowerCase().padStart(64, "0")}`;
           rawBalance = await rpcCall(rpcUrl, "eth_call", [
-            { to: token.address, data },
+            { to: token.address, data: calldata },
             "latest",
           ]);
         }
         const balance = hexToDecimal(rawBalance, token.decimals);
-        return { symbol: token.symbol, balance, valueUsd: balance * token.priceUsd, targetPct: token.targetPct, priceUsd: token.priceUsd };
+        return {
+          symbol: token.symbol, balance,
+          valueUsd: balance * token.priceUsd,
+          targetPct: token.targetPct, priceUsd: token.priceUsd,
+        };
       }),
     );
-    return balances;
+    return results.map((r, i) =>
+      r.status === "fulfilled"
+        ? r.value
+        : {
+            symbol: ARB_SEPOLIA_TOKENS[i]!.symbol, balance: 0, valueUsd: 0,
+            targetPct: ARB_SEPOLIA_TOKENS[i]!.targetPct,
+            priceUsd: ARB_SEPOLIA_TOKENS[i]!.priceUsd,
+          },
+    );
   } catch {
     return null;
   }
