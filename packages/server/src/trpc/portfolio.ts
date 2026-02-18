@@ -44,8 +44,12 @@ function hexToDecimal(hex: string, decimals: number): number {
 async function fetchOnChainBalances(): Promise<Array<{
   symbol: string; balance: number; valueUsd: number; targetPct: number; priceUsd: number;
 }> | null> {
-  const rpcUrl = process.env["ARB_SEPOLIA_RPC_URL"] ?? process.env["RPC_URL"];
-  if (!rpcUrl) return null;
+  // Prefer a private RPC key; fall back to the public Arbitrum Sepolia endpoint
+  // so the on-chain read works without any environment variable configuration.
+  const rpcUrl =
+    process.env["ARB_SEPOLIA_RPC_URL"] ??
+    process.env["RPC_URL"] ??
+    "https://sepolia-rollup.arbitrum.io/rpc";
 
   try {
     // allSettled so one missing/broken token doesn't abort the whole call
