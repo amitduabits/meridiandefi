@@ -5,6 +5,7 @@ import { PortfolioPage } from "./pages/portfolio";
 import { TransactionsPage } from "./pages/transactions";
 import { RiskPage } from "./pages/risk";
 import { HealthPage } from "./pages/health";
+import { ProofPage } from "./pages/proof";
 
 export function App() {
   return (
@@ -17,6 +18,7 @@ export function App() {
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/risk" element={<RiskPage />} />
           <Route path="/health" element={<HealthPage />} />
+          <Route path="/proof" element={<ProofPage />} />
         </Routes>
       </main>
     </div>

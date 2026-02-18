@@ -1,13 +1,64 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "../components/layout/Header";
-import { mockTransactions } from "../lib/mock-data";
+import { mockTransactions, type MockTransaction } from "../lib/mock-data";
+import { fetchTransactions, type Transaction } from "../lib/api.js";
 import { ExternalLink, Search, Filter } from "lucide-react";
+
+function DataSourceBadge({ source }: { source: "live" | "mock" | "loading" }) {
+  if (source === "loading") return null;
+  if (source === "live") {
+    return (
+      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        Live
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-semibold">
+      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+      Mock Data
+    </span>
+  );
+}
+
+function liveToMockTx(tx: Transaction, i: number): MockTransaction {
+  return {
+    id: `live-${i}`,
+    agentId: "rebalancer-demo-001",
+    agentName: "DeFi Rebalancer",
+    timestamp: tx.timestamp,
+    chain: "Arbitrum Sepolia",
+    action: tx.action,
+    tokenIn: tx.tokenIn,
+    tokenOut: tx.tokenOut,
+    amountIn: Number(tx.amountIn),
+    amountOut: Number(tx.amountOut),
+    valueUsd: 0,
+    gasCostUsd: Number(tx.gasUsed) * 1e-9,
+    txHash: tx.txHash,
+    status: "success",
+  };
+}
 
 export function TransactionsPage() {
   const [search, setSearch] = useState("");
   const [chainFilter, setChainFilter] = useState<string>("all");
+  const [dataSource, setDataSource] = useState<"live" | "mock" | "loading">("loading");
+  const [transactions, setTransactions] = useState<MockTransaction[]>(mockTransactions);
 
-  const filtered = mockTransactions.filter((tx) => {
+  useEffect(() => {
+    fetchTransactions(50).then((data) => {
+      if (data.length > 0) {
+        setTransactions(data.map(liveToMockTx));
+        setDataSource("live");
+      } else {
+        setDataSource("mock");
+      }
+    });
+  }, []);
+
+  const filtered = transactions.filter((tx) => {
     if (chainFilter !== "all" && tx.chain !== chainFilter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -22,7 +73,7 @@ export function TransactionsPage() {
     return true;
   });
 
-  const chains = [...new Set(mockTransactions.map((t) => t.chain))];
+  const chains = [...new Set(transactions.map((t) => t.chain))];
 
   return (
     <div className="min-h-screen">
@@ -53,6 +104,7 @@ export function TransactionsPage() {
               ))}
             </select>
           </div>
+          <DataSourceBadge source={dataSource} />
           <span className="text-[12px] text-slate-500 tabular-nums">{filtered.length} results</span>
         </div>
 
@@ -99,9 +151,14 @@ export function TransactionsPage() {
                       <StatusBadge status={tx.status} />
                     </td>
                     <td className="px-6 py-3.5 text-center">
-                      <button className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/[0.06] transition-all duration-200">
+                      <a
+                        href={`https://sepolia.arbiscan.io/tx/${tx.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex p-1.5 rounded-lg text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/[0.06] transition-all duration-200"
+                      >
                         <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
+                      </a>
                     </td>
                   </tr>
                 ))}

@@ -1,18 +1,67 @@
+import { useEffect, useState } from "react";
 import { Header } from "../components/layout/Header";
 import { EquityCurve } from "../components/charts/EquityCurve";
 import { AllocationPie } from "../components/charts/AllocationPie";
-import { mockPositions, mockPnlData } from "../lib/mock-data";
+import { mockPositions, mockPnlData, type MockPosition } from "../lib/mock-data";
+import { fetchPortfolio, type PortfolioSnapshot } from "../lib/api.js";
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, Layers } from "lucide-react";
 
+function DataSourceBadge({ source }: { source: "live" | "mock" | "loading" }) {
+  if (source === "loading") return null;
+  if (source === "live") {
+    return (
+      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        Live
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-semibold">
+      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+      Mock Data
+    </span>
+  );
+}
+
+function portfolioToPositions(snapshot: PortfolioSnapshot): MockPosition[] {
+  return snapshot.tokens.map((t) => ({
+    token: t.symbol,
+    chain: "Arbitrum Sepolia",
+    amount: Number(t.balance),
+    valueUsd: t.valueUsd,
+    pnlUsd: 0,
+    pnlPct: 0,
+    protocol: "Wallet",
+  }));
+}
+
 export function PortfolioPage() {
-  const totalValue = mockPositions.reduce((s, p) => s + p.valueUsd, 0);
-  const totalPnl = mockPositions.reduce((s, p) => s + p.pnlUsd, 0);
-  const totalPnlPct = (totalPnl / (totalValue - totalPnl)) * 100;
+  const [dataSource, setDataSource] = useState<"live" | "mock" | "loading">("loading");
+  const [positions, setPositions] = useState<MockPosition[]>(mockPositions);
+  const [pnlData, setPnlData] = useState(mockPnlData);
+
+  useEffect(() => {
+    fetchPortfolio().then((data) => {
+      if (data) {
+        setPositions(portfolioToPositions(data));
+        if (data.equityCurve.length > 0) {
+          setPnlData(data.equityCurve.map((p) => ({ timestamp: p.timestamp, value: p.value, pnl: 0 })));
+        }
+        setDataSource("live");
+      } else {
+        setDataSource("mock");
+      }
+    });
+  }, []);
+
+  const totalValue = positions.reduce((s, p) => s + p.valueUsd, 0);
+  const totalPnl = positions.reduce((s, p) => s + p.pnlUsd, 0);
+  const totalPnlPct = totalValue > 0 ? (totalPnl / (totalValue - totalPnl)) * 100 : 0;
   const isPositive = totalPnl >= 0;
 
-  // Chain distribution.
   const byChain = new Map<string, number>();
-  for (const p of mockPositions) {
+  for (const p of positions) {
     byChain.set(p.chain, (byChain.get(p.chain) ?? 0) + p.valueUsd);
   }
 
@@ -21,6 +70,9 @@ export function PortfolioPage() {
       <Header title="Portfolio" />
       <div className="p-8 space-y-6">
         {/* Summary cards */}
+        <div className="flex items-center justify-between mb-1">
+          <DataSourceBadge source={dataSource} />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 stagger-children">
           <StatCard
             label="Total Value"
@@ -44,7 +96,7 @@ export function PortfolioPage() {
           />
           <StatCard
             label="Positions"
-            value={String(mockPositions.length)}
+            value={String(positions.length)}
             icon={<Layers className="w-4 h-4" strokeWidth={1.5} />}
             iconBg="bg-violet-500/10 text-violet-400"
           />
@@ -54,15 +106,15 @@ export function PortfolioPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 card-static p-6">
             <h3 className="text-[13px] font-semibold text-white/80 mb-5">Equity Curve (30d)</h3>
-            <EquityCurve data={mockPnlData} />
+            <EquityCurve data={pnlData} />
           </div>
           <div className="card-static p-6">
             <h3 className="text-[13px] font-semibold text-white/80 mb-4">Allocation</h3>
-            <AllocationPie positions={mockPositions} />
+            <AllocationPie positions={positions} />
             <div className="mt-5 space-y-2.5 pt-4 border-t border-[#1E293B]/60">
               <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">By Chain</p>
               {[...byChain.entries()].sort((a, b) => b[1] - a[1]).map(([chain, value]) => {
-                const pct = ((value / totalValue) * 100).toFixed(0);
+                const pct = totalValue > 0 ? ((value / totalValue) * 100).toFixed(0) : "0";
                 return (
                   <div key={chain} className="flex items-center justify-between">
                     <span className="text-[12px] text-slate-400">{chain}</span>
@@ -100,7 +152,7 @@ export function PortfolioPage() {
                 </tr>
               </thead>
               <tbody>
-                {mockPositions
+                {positions
                   .slice()
                   .sort((a, b) => b.valueUsd - a.valueUsd)
                   .map((p, i) => (

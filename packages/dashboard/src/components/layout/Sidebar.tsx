@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   Shield,
   Activity,
+  BadgeCheck,
 } from "lucide-react";
 
 const navItems = [
@@ -13,6 +14,7 @@ const navItems = [
   { to: "/transactions", icon: ArrowLeftRight, label: "Transactions" },
   { to: "/risk", icon: Shield, label: "Risk" },
   { to: "/health", icon: Activity, label: "System" },
+  { to: "/proof", icon: BadgeCheck, label: "Proof" },
 ];
 
 export function Sidebar() {
