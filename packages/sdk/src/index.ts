@@ -112,8 +112,24 @@ export { Backtester } from "./strategy/backtest.js";
 export type { OHLCVBar, BacktestResult } from "./strategy/backtest.js";
 export { StrategyBuilder } from "./strategy/builder.js";
 export type { ValidationResult } from "./strategy/builder.js";
+export { parseDsl, parseDslAsync } from "./strategy/dsl-parser.js";
+export type { DslAst, DslRule, DslParam, DslExpression, DslConstraints } from "./strategy/dsl-parser.js";
+export { compileDsl, validateStrategy } from "./strategy/compiler.js";
+export type { CompileResult } from "./strategy/compiler.js";
+export { NLTranslator } from "./strategy/nl-translator.js";
+export type { NLTranslatorDeps } from "./strategy/nl-translator.js";
+export { executeInSandbox } from "./strategy/sandbox.js";
+export type { SandboxResult } from "./strategy/sandbox.js";
+export { createRebalancerStrategy } from "./strategy/prebuilt/rebalancer.js";
+export type { RebalancerOpts } from "./strategy/prebuilt/rebalancer.js";
+export { createDCAStrategy } from "./strategy/prebuilt/dca.js";
+export type { DCAOpts } from "./strategy/prebuilt/dca.js";
+export { createYieldRotationStrategy } from "./strategy/prebuilt/yield-rotation.js";
+export type { YieldRotationOpts } from "./strategy/prebuilt/yield-rotation.js";
 
 // Chains
+export { SUPPORTED_CHAINS, SUPPORTED_PROTOCOLS } from "./chains/registry.js";
+export type { SupportedChainKey, SupportedProtocol } from "./chains/registry.js";
 export type { IDeFiConnector, QuoteResult, LiquidityParams, BorrowParams, StakeParams, BridgeParams, RepayParams } from "./chains/connector.js";
 export { EVMProvider } from "./chains/evm/provider.js";
 export type { EVMChainConfig } from "./chains/evm/provider.js";
@@ -137,3 +153,27 @@ export type { ICheckpointManager } from "./memory/checkpoint.js";
 export { MemoryManager } from "./memory/manager.js";
 export type { IMemoryManager, MemoryManagerConfig } from "./memory/manager.js";
 export * as episodicSchema from "./memory/episodic-schema.js";
+
+// Communication
+export {
+  P2PNode,
+  CommunicationError,
+  DiscoveryService,
+  DiscoveryError,
+  Messenger,
+  MessengerError,
+  NegotiationProtocol,
+  NegotiationError,
+  PaymentChannel,
+  PaymentChannelError,
+  type P2PNodeConfig,
+  type IP2PNode,
+  type AgentProfile,
+  type MessageType,
+  type AgentMessage,
+  type NegotiationState,
+  type TaskProposal,
+  type NegotiationResult,
+  type PaymentChannelConfig,
+  type PaymentStatus,
+} from "./communication/index.js";
