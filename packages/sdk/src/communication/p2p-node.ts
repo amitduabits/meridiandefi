@@ -194,9 +194,14 @@ export class P2PNode implements IP2PNode {
   async start(): Promise<void> {
     try {
       const { createLibp2p } = await import("libp2p");
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore — optional peer dependencies; not installed in all environments
       const { gossipsub } = await import("@chainsafe/libp2p-gossipsub");
+      // @ts-ignore
       const { noise } = await import("@chainsafe/libp2p-noise");
+      // @ts-ignore
       const { yamux } = await import("@chainsafe/libp2p-yamux");
+      // @ts-ignore
       const { tcp } = await import("@libp2p/tcp");
 
       const listenAddresses = this._config.listenAddresses ?? ["/ip4/0.0.0.0/tcp/0"];

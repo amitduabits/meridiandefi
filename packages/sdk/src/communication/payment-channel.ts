@@ -170,7 +170,7 @@ export class PaymentChannel {
   private async _onChainCreate(taskId: string, amount: bigint, executor: string): Promise<string> {
     // Dynamically import viem to avoid hard dependency in mock builds.
     try {
-      const { createWalletClient, createPublicClient, http, parseAbi } = await import("viem");
+      const { createWalletClient, http, parseAbi } = await import("viem");
 
       if (!this._config.privateKey || !this._config.rpcUrl || !this._config.escrowContractAddress) {
         throw new PaymentChannelError("Missing required production config (privateKey, rpcUrl, escrowContractAddress)", {
@@ -182,7 +182,6 @@ export class PaymentChannel {
       const account = privateKeyToAccount(this._config.privateKey);
 
       const transport = http(this._config.rpcUrl);
-      const _publicClient = createPublicClient({ transport });
       const walletClient = createWalletClient({ account, transport });
 
       const abi = parseAbi([
@@ -195,6 +194,7 @@ export class PaymentChannel {
         functionName: "createPayment",
         args: [`0x${Buffer.from(taskId).toString("hex").padEnd(64, "0")}` as `0x${string}`, executor as `0x${string}`],
         value: amount,
+        chain: undefined,
       });
 
       logger.info({ taskId, txHash }, "Payment created on-chain");
@@ -224,6 +224,7 @@ export class PaymentChannel {
         abi,
         functionName: "releasePayment",
         args: [`0x${Buffer.from(taskId).toString("hex").padEnd(64, "0")}` as `0x${string}`],
+        chain: undefined,
       });
 
       logger.info({ taskId, txHash }, "Payment released on-chain");
@@ -253,6 +254,7 @@ export class PaymentChannel {
         abi,
         functionName: "disputePayment",
         args: [`0x${Buffer.from(taskId).toString("hex").padEnd(64, "0")}` as `0x${string}`, reason],
+        chain: undefined,
       });
 
       logger.info({ taskId, reason, txHash }, "Payment disputed on-chain");
