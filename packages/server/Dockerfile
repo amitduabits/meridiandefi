@@ -19,17 +19,19 @@ RUN pnpm --filter @meridian/sdk build
 # Build server
 RUN pnpm --filter @meridian/server build
 
+# Create a self-contained production deployment bundle.
+# pnpm deploy resolves workspace: deps (copies @meridian/sdk dist) and
+# flattens node_modules so the production image needs no pnpm at all.
+RUN pnpm --filter @meridian/server deploy --prod /app/deploy \
+    && cp -r /app/packages/server/dist /app/deploy/dist
+
 # ---------------------------------------------------------------------------
 # Production image
 # ---------------------------------------------------------------------------
 FROM node:20-alpine
 WORKDIR /app
 
-COPY --from=builder /app/packages/server/dist ./dist
-COPY --from=builder /app/packages/server/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages/sdk/dist /app/packages/sdk/dist
-COPY --from=builder /app/packages/sdk/package.json /app/packages/sdk/package.json
+COPY --from=builder /app/deploy .
 
 ENV NODE_ENV=production
 ENV PORT=3001
