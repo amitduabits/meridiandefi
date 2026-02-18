@@ -56,72 +56,61 @@ function inp(obj: unknown) {
 }
 
 // ---------------------------------------------------------------------------
-// Agent — uses agents.list (returns MockAgent[])
+// Agent — agents.getActive proxies the live DeFi agent health endpoint
 // ---------------------------------------------------------------------------
 
 export async function fetchAgentStatus(): Promise<AgentStatus | null> {
   try {
-    const res = await fetch(`${BASE_URL}/trpc/agents.list?input=${inp({})}`, {
+    const res = await fetch(`${BASE_URL}/trpc/agents.getActive?input=${inp({})}`, {
       signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) return null
     const data = await res.json()
-    // tRPC response: { result: { data: [...] } }
-    const agents: Array<{
-      id: string
-      name: string
-      state: string
-      capabilities: string[]
-      chains: number[]
-      cycleCount: number
-      pnlUsd: number
-      dryRun: boolean
-    }> = data.result?.data ?? []
-    if (!agents.length) return null
-    const a = agents[0]!
-    return {
-      id: a.id,
-      name: a.name,
-      state: a.state,
-      strategy: a.capabilities.join(', '),
-      wallet: '',
-      totalTrades: a.cycleCount,
-      uptime: 0,
-      currentAllocation: {},
-      targetAllocation: {},
-      lastDecision: null,
-    }
+    // tRPC response: { result: { data: AgentStatus | null } }
+    return (data.result?.data as AgentStatus | null) ?? null
   } catch {
     return null // Fall back to mock data
   }
 }
 
 // ---------------------------------------------------------------------------
-// Portfolio — combines overview + positions + history endpoints
+// Portfolio — tries agentPositions (live on-chain) then falls back to mock
 // ---------------------------------------------------------------------------
 
 export async function fetchPortfolio(): Promise<PortfolioSnapshot | null> {
   try {
-    const [ovRes, posRes, histRes] = await Promise.all([
-      fetch(`${BASE_URL}/trpc/portfolio.overview?input=${inp({})}`, { signal: AbortSignal.timeout(5000) }),
-      fetch(`${BASE_URL}/trpc/portfolio.positions?input=${inp({})}`, { signal: AbortSignal.timeout(5000) }),
+    const [agentRes, histRes] = await Promise.all([
+      fetch(`${BASE_URL}/trpc/portfolio.agentPositions?input=${inp({})}`, { signal: AbortSignal.timeout(8000) }),
       fetch(`${BASE_URL}/trpc/portfolio.history?input=${inp({ days: 30 })}`, { signal: AbortSignal.timeout(5000) }),
     ])
+
+    // Live on-chain data path
+    if (agentRes.ok) {
+      const agentData = (await agentRes.json()).result?.data as {
+        totalValueUsd: number
+        tokens: Array<{ symbol: string; balance: string; valueUsd: number; allocationPct: number; targetPct: number; driftPct: number }>
+      } | null
+
+      if (agentData) {
+        const hist: { points: Array<{ timestamp: number; valueUsd: number }> } =
+          histRes.ok ? ((await histRes.json()).result?.data ?? { points: [] }) : { points: [] }
+        return {
+          totalValueUsd: agentData.totalValueUsd,
+          tokens: agentData.tokens,
+          equityCurve: hist.points.map((pt) => ({ timestamp: pt.timestamp, value: pt.valueUsd })),
+        }
+      }
+    }
+
+    // Fallback: mock overview + positions
+    const [ovRes, posRes] = await Promise.all([
+      fetch(`${BASE_URL}/trpc/portfolio.overview?input=${inp({})}`, { signal: AbortSignal.timeout(5000) }),
+      fetch(`${BASE_URL}/trpc/portfolio.positions?input=${inp({})}`, { signal: AbortSignal.timeout(5000) }),
+    ])
     if (!ovRes.ok) return null
-
-    const ov: {
-      totalValueUsd: number
-      totalPnlUsd: number
-    } = (await ovRes.json()).result?.data
-
-    const positions: Array<{
-      symbol: string
-      balance: string
-      valueUsd: number
-    }> = posRes.ok ? ((await posRes.json()).result?.data ?? []) : []
-
-    const hist: { points: Array<{ timestamp: number; valueUsd: number }> } =
-      histRes.ok ? ((await histRes.json()).result?.data ?? { points: [] }) : { points: [] }
+    const ov: { totalValueUsd: number } = (await ovRes.json()).result?.data
+    const positions: Array<{ symbol: string; balance: string; valueUsd: number }> =
+      posRes.ok ? ((await posRes.json()).result?.data ?? []) : []
 
     return {
       totalValueUsd: ov.totalValueUsd,
@@ -133,7 +122,7 @@ export async function fetchPortfolio(): Promise<PortfolioSnapshot | null> {
         targetPct: 0,
         driftPct: 0,
       })),
-      equityCurve: hist.points.map((pt) => ({ timestamp: pt.timestamp, value: pt.valueUsd })),
+      equityCurve: [],
     }
   } catch {
     return null

@@ -6,6 +6,66 @@ import { z } from "zod";
 import { router, publicProcedure } from "./init.js";
 
 // ---------------------------------------------------------------------------
+// Live on-chain balance fetcher for Arbitrum Sepolia
+// ---------------------------------------------------------------------------
+
+const AGENT_WALLET = "0xf12Eebe60EC31c58A488FEE0F57D890C2bd4Bf8d";
+const ARB_SEPOLIA_TOKENS = [
+  { symbol: "ETH",  address: "0x0000000000000000000000000000000000000000", decimals: 18, targetPct: 0.40, priceUsd: 3_400 },
+  { symbol: "USDC", address: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d", decimals: 6,  targetPct: 0.30, priceUsd: 1.0 },
+  { symbol: "WBTC", address: "0x3Ec3D2e3E86B664EB61F4bDcC1D7E2C5F4D4C6e2", decimals: 8,  targetPct: 0.30, priceUsd: 97_000 },
+];
+
+async function rpcCall(rpcUrl: string, method: string, params: unknown[]): Promise<string> {
+  const res = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!res.ok) throw new Error(`RPC error ${res.status}`);
+  const data = await res.json() as { result?: string; error?: unknown };
+  if (data.error) throw new Error(JSON.stringify(data.error));
+  return data.result ?? "0x0";
+}
+
+function hexToDecimal(hex: string, decimals: number): number {
+  const wei = BigInt(hex);
+  const divisor = BigInt(10 ** decimals);
+  return Number((wei * 10_000n) / divisor) / 10_000;
+}
+
+async function fetchOnChainBalances(): Promise<Array<{
+  symbol: string; balance: number; valueUsd: number; targetPct: number; priceUsd: number;
+}> | null> {
+  const rpcUrl = process.env["ARB_SEPOLIA_RPC_URL"] ?? process.env["RPC_URL"];
+  if (!rpcUrl) return null;
+
+  try {
+    const balances = await Promise.all(
+      ARB_SEPOLIA_TOKENS.map(async (token) => {
+        let rawBalance: string;
+        if (token.address === "0x0000000000000000000000000000000000000000") {
+          rawBalance = await rpcCall(rpcUrl, "eth_getBalance", [AGENT_WALLET, "latest"]);
+        } else {
+          // ERC-20 balanceOf(address)
+          const data = `0x70a08231${AGENT_WALLET.slice(2).toLowerCase().padStart(64, "0")}`;
+          rawBalance = await rpcCall(rpcUrl, "eth_call", [
+            { to: token.address, data },
+            "latest",
+          ]);
+        }
+        const balance = hexToDecimal(rawBalance, token.decimals);
+        return { symbol: token.symbol, balance, valueUsd: balance * token.priceUsd, targetPct: token.targetPct, priceUsd: token.priceUsd };
+      }),
+    );
+    return balances;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Mock data
 // ---------------------------------------------------------------------------
 
@@ -185,4 +245,30 @@ export const portfolioRouter = router({
         periodDays: days,
       };
     }),
+
+  /**
+   * Live on-chain token balances for the DeFi agent wallet on Arbitrum Sepolia.
+   * Falls back to null when RPC is unavailable.
+   */
+  agentPositions: publicProcedure.query(async () => {
+    const balances = await fetchOnChainBalances();
+    if (!balances) return null;
+    const totalValueUsd = balances.reduce((s, b) => s + b.valueUsd, 0);
+    return {
+      wallet: AGENT_WALLET,
+      chainId: 421614,
+      chainName: "Arbitrum Sepolia",
+      totalValueUsd,
+      tokens: balances.map((b) => ({
+        symbol: b.symbol,
+        balance: b.balance.toFixed(b.symbol === "ETH" ? 6 : b.symbol === "USDC" ? 2 : 8),
+        valueUsd: b.valueUsd,
+        allocationPct: totalValueUsd > 0 ? (b.valueUsd / totalValueUsd) * 100 : 0,
+        targetPct: b.targetPct * 100,
+        driftPct: totalValueUsd > 0 ? ((b.valueUsd / totalValueUsd) - b.targetPct) * 100 : 0,
+        priceUsd: b.priceUsd,
+      })),
+      updatedAt: new Date().toISOString(),
+    };
+  }),
 });

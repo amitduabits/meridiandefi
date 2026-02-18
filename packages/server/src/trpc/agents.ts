@@ -7,6 +7,37 @@ import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, authedProcedure } from "./init.js";
 
 // ---------------------------------------------------------------------------
+// Live DeFi agent health — fetched from the deployed agent service.
+// ---------------------------------------------------------------------------
+
+const AGENT_HEALTH_URL =
+  process.env["AGENT_HEALTH_URL"] ??
+  "https://meridiandefi-production-a045.up.railway.app/health";
+
+interface AgentHealth {
+  status: string;
+  uptime: number;
+  agentAddress: string;
+  dryRun: boolean;
+  cycles: number;
+  trades: number;
+  lastCycleAt: string | null;
+  lastAction: string;
+}
+
+async function fetchAgentHealth(): Promise<AgentHealth | null> {
+  try {
+    const res = await fetch(AGENT_HEALTH_URL, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as AgentHealth;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Mock data — replaced by real service layer in production.
 // ---------------------------------------------------------------------------
 
@@ -63,6 +94,43 @@ const mockAgents: MockAgent[] = [
 // ---------------------------------------------------------------------------
 
 export const agentsRouter = router({
+  /**
+   * Get the live DeFi agent status by proxying its health endpoint.
+   * Falls back to null when the agent service is unreachable.
+   */
+  getActive: publicProcedure.query(async () => {
+    const health = await fetchAgentHealth();
+    if (!health) return null;
+
+    return {
+      id: "rebalancer-demo-001",
+      name: "DeFi Portfolio Rebalancer",
+      state: health.status === "ok" ? ("SENSING" as const) : ("ERROR" as const),
+      capabilities: ["SWAP", "PORTFOLIO_MANAGEMENT"],
+      chains: [421614],
+      createdAt: new Date(Date.now() - health.uptime * 1_000).toISOString(),
+      cycleCount: health.cycles,
+      pnlUsd: 0,
+      dryRun: health.dryRun,
+      // Extra fields for the dashboard AgentStatus shape:
+      wallet: health.agentAddress,
+      totalTrades: health.trades,
+      uptime: health.uptime,
+      currentAllocation: {} as Record<string, number>,
+      targetAllocation: {} as Record<string, number>,
+      lastDecision:
+        health.lastAction && health.lastAction !== "NONE"
+          ? {
+              action: health.lastAction,
+              reasoning: "",
+              timestamp: health.lastCycleAt
+                ? new Date(health.lastCycleAt).getTime()
+                : Date.now(),
+            }
+          : null,
+    };
+  }),
+
   /** List all agents. */
   list: publicProcedure.query(() => {
     return mockAgents;

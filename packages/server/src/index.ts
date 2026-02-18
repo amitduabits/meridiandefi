@@ -23,10 +23,17 @@ export type { AppRouter } from "./trpc/router.js";
 
 const app = express();
 
-// Allow origins from CORS_ORIGINS env var (comma-separated) or permissive for local dev.
-const corsOrigins = process.env["CORS_ORIGINS"]
+// Always allow the deployed Vercel dashboard + localhost; extend via CORS_ORIGINS env var.
+const defaultOrigins = [
+  "https://meridian-dashboard-jxwcs5rrj-mercel-de-fi.vercel.app",
+  "https://meridian-dashboard-hipm4f98m-mercel-de-fi.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
+const extraOrigins = process.env["CORS_ORIGINS"]
   ? process.env["CORS_ORIGINS"].split(",").map((o) => o.trim())
-  : true;
+  : [];
+const corsOrigins = [...new Set([...defaultOrigins, ...extraOrigins])];
 app.use(cors({ origin: corsOrigins, credentials: true }));
 app.use(express.json());
 
