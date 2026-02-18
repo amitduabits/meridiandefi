@@ -23,7 +23,11 @@ export type { AppRouter } from "./trpc/router.js";
 
 const app = express();
 
-app.use(cors({ origin: true, credentials: true }));
+// Allow origins from CORS_ORIGINS env var (comma-separated) or permissive for local dev.
+const corsOrigins = process.env["CORS_ORIGINS"]
+  ? process.env["CORS_ORIGINS"].split(",").map((o) => o.trim())
+  : true;
+app.use(cors({ origin: corsOrigins, credentials: true }));
 app.use(express.json());
 
 // ---------------------------------------------------------------------------
@@ -85,7 +89,7 @@ app.use(
 // ---------------------------------------------------------------------------
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", uptime: process.uptime(), timestamp: new Date().toISOString() });
 });
 
 // ---------------------------------------------------------------------------
