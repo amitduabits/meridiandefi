@@ -2,7 +2,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy workspace manifests
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY packages/server/package.json packages/server/
 COPY packages/sdk/package.json packages/sdk/
 
