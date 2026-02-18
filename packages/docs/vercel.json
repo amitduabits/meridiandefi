@@ -3,5 +3,6 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": "vitepress",
-  "rewrites": [{ "source": "/(.*)", "destination": "/$1" }]
+  "cleanUrls": true,
+  "trailingSlash": false
 }
