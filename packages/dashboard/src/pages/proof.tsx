@@ -174,7 +174,7 @@ export function ProofPage() {
               </div>
               <h2 className="text-[20px] font-bold text-white/95 mb-1">Meridian DeFi Rebalancer</h2>
               <p className="text-[13px] text-slate-400 max-w-xl">
-                An autonomous AI agent running 24/7 on Arbitrum Sepolia. Every decision is made by Claude Haiku,
+                An autonomous AI agent running 24/7 on Arbitrum Sepolia. Every decision is made on-chain,
                 every trade is verifiable on-chain. Zero human intervention required.
               </p>
             </div>
@@ -282,7 +282,7 @@ export function ProofPage() {
               <Activity className="w-4 h-4 text-indigo-400" strokeWidth={1.5} />
               <h3 className="text-[14px] font-semibold text-white/90">Last 10 AI Decision Logs</h3>
             </div>
-            <span className="text-[11px] text-slate-500">Claude Haiku reasoning chain</span>
+            <span className="text-[11px] text-slate-500">AI reasoning chain</span>
           </div>
           <div className="divide-y divide-[#1E293B]/40">
             {MOCK_REASONING_LOGS.slice(0, 10).map((log, i) => (
