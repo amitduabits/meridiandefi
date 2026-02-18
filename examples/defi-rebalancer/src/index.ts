@@ -10,6 +10,7 @@
 //   5. Logs all decisions with full reasoning chain
 // ---------------------------------------------------------------------------
 
+import { createServer } from "node:http";
 import chalk from "chalk";
 import {
   createPublicClient,
@@ -106,6 +107,56 @@ const walletClient: WalletClient = createWalletClient({
 // ---------------------------------------------------------------------------
 
 const anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
+
+// ---------------------------------------------------------------------------
+// Structured logger — JSON in production, chalk in development.
+// ---------------------------------------------------------------------------
+
+function log(level: "info" | "warn" | "error", msg: string, extra: Record<string, unknown> = {}): void {
+  if (config.jsonLogs) {
+    process.stdout.write(JSON.stringify({ level, msg, ...extra, time: new Date().toISOString() }) + "\n");
+  } else {
+    const fn = level === "error" ? chalk.red : level === "warn" ? chalk.yellow : chalk.gray;
+    console.log(fn(`  [${level.toUpperCase()}] ${msg}`), Object.keys(extra).length ? extra : "");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cumulative stats
+// ---------------------------------------------------------------------------
+
+const stats = {
+  startedAt: Date.now(),
+  cycles: 0,
+  trades: 0,
+  gasSpentWei: 0n,
+  errors: 0,
+  lastCycleAt: 0,
+  lastAction: "NONE",
+};
+
+// ---------------------------------------------------------------------------
+// HTTP health endpoint (Railway uses this for uptime monitoring).
+// ---------------------------------------------------------------------------
+
+const healthServer = createServer((req, res) => {
+  if (req.url === "/health" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      status: "ok",
+      uptime: process.uptime(),
+      agentAddress: account.address,
+      dryRun: config.dryRun,
+      cycles: stats.cycles,
+      trades: stats.trades,
+      lastCycleAt: stats.lastCycleAt ? new Date(stats.lastCycleAt).toISOString() : null,
+      lastAction: stats.lastAction,
+    }));
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Shared state — used by the display between provider calls.
@@ -370,11 +421,14 @@ async function main(): Promise<void> {
 
   eventBus.on("market:snapshot", () => {
     cycleCount++;
+    stats.cycles++;
+    stats.lastCycleAt = Date.now();
     printCycleHeader(cycleCount);
     printPortfolioTable(lastAllocationRows, lastBlockNumber, lastTotalValueUsd);
   });
 
   eventBus.on("agent:decision", ({ record }) => {
+    stats.lastAction = record.action;
     printReasoning(record.reasoning);
     printAction(
       record.action,
@@ -385,6 +439,10 @@ async function main(): Promise<void> {
   });
 
   eventBus.on("agent:trade", ({ tx }) => {
+    stats.trades++;
+    if (tx.gasUsed !== undefined && tx.effectiveGasPrice !== undefined) {
+      stats.gasSpentWei += tx.gasUsed * tx.effectiveGasPrice;
+    }
     if (tx.hash && tx.hash !== `0x${"0".repeat(64)}`) {
       const gasCost = tx.gasUsed !== undefined && tx.effectiveGasPrice !== undefined
         ? formatEther(tx.gasUsed * tx.effectiveGasPrice) + " ETH"
@@ -394,6 +452,8 @@ async function main(): Promise<void> {
   });
 
   eventBus.on("agent:error", ({ error, recoverable }) => {
+    stats.errors++;
+    log("error", error.message, { recoverable });
     printError(
       `${error.message}${recoverable ? " (recoverable — will retry)" : " (FATAL)"}`,
     );
@@ -405,6 +465,7 @@ async function main(): Promise<void> {
 
   const shutdown = async () => {
     console.log("\n  Shutting down agent...");
+    healthServer.close();
     await agent.kill();
     process.exit(0);
   };
@@ -415,6 +476,17 @@ async function main(): Promise<void> {
   // -----------------------------------------------------------------------
   // Start the agent
   // -----------------------------------------------------------------------
+
+  // -----------------------------------------------------------------------
+  // Start the health server
+  // -----------------------------------------------------------------------
+
+  await new Promise<void>((resolve) => {
+    healthServer.listen(config.port, () => {
+      log("info", `Health server listening`, { port: config.port });
+      resolve();
+    });
+  });
 
   console.log(chalk.gray("  Starting agent loop...\n"));
 

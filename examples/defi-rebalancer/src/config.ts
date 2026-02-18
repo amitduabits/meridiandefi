@@ -41,25 +41,27 @@ export const TOKENS: TokenConfig[] = [
 // Environment
 // ---------------------------------------------------------------------------
 
-function requireEnv(key: string): string {
-  const value = process.env[key];
-  if (!value) {
-    console.error(`\n  Missing required environment variable: ${key}`);
-    console.error(`  Copy .env.example to .env and fill in the values.\n`);
-    process.exit(1);
+function requireEnv(...keys: string[]): string {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (value) return value;
   }
-  return value;
+  console.error(`\n  Missing required environment variable: ${keys.join(" or ")}`);
+  console.error(`  Copy .env.example to .env and fill in the values.\n`);
+  process.exit(1);
 }
 
+const isProduction = process.env["NODE_ENV"] === "production" || process.env["DEPLOY_MODE"] === "production";
+
 export const config = {
-  /** Arbitrum Sepolia RPC URL. */
-  rpcUrl: requireEnv("ARBITRUM_SEPOLIA_RPC_URL"),
+  /** Arbitrum Sepolia RPC URL. Accepts RPC_URL or ARBITRUM_SEPOLIA_RPC_URL. */
+  rpcUrl: requireEnv("RPC_URL", "ARBITRUM_SEPOLIA_RPC_URL"),
 
   /** Anthropic API key for Claude reasoning. */
   anthropicApiKey: requireEnv("ANTHROPIC_API_KEY"),
 
-  /** Wallet private key (with 0x prefix). */
-  privateKey: requireEnv("WALLET_PRIVATE_KEY") as `0x${string}`,
+  /** Wallet private key (with 0x prefix). Accepts PRIVATE_KEY or WALLET_PRIVATE_KEY. */
+  privateKey: requireEnv("PRIVATE_KEY", "WALLET_PRIVATE_KEY") as `0x${string}`,
 
   /** Chain ID — Arbitrum Sepolia. */
   chainId: 421614,
@@ -68,14 +70,20 @@ export const config = {
   driftThreshold: Number(process.env["DRIFT_THRESHOLD"] ?? "0.05"),
 
   /** Tick interval in seconds — how often the agent checks. */
-  tickIntervalSec: Number(process.env["TICK_INTERVAL_SEC"] ?? "60"),
+  tickIntervalSec: Number(process.env["TICK_INTERVAL_SEC"] ?? (isProduction ? "60" : "30")),
 
   /** Max slippage in basis points for swaps. */
   maxSlippageBps: Number(process.env["MAX_SLIPPAGE_BPS"] ?? "50"),
 
-  /** Dry-run mode — simulate but don't actually send transactions. */
+  /** Dry-run mode — explicitly set DRY_RUN=true to simulate without transactions. */
   dryRun: process.env["DRY_RUN"] === "true",
 
   /** Claude model to use. */
-  claudeModel: process.env["CLAUDE_MODEL"] ?? "claude-sonnet-4-5-20250929",
+  claudeModel: process.env["CLAUDE_MODEL"] ?? "claude-haiku-4-5-20251001",
+
+  /** HTTP health check port (Railway sets PORT automatically). */
+  port: Number(process.env["PORT"] ?? "3002"),
+
+  /** Whether to emit JSON logs (true in production). */
+  jsonLogs: isProduction || process.env["JSON_LOGS"] === "true",
 } as const;
