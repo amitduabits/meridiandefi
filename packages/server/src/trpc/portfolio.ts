@@ -271,11 +271,12 @@ export const portfolioRouter = router({
 
   /**
    * Live on-chain token balances for the DeFi agent wallet on Arbitrum Sepolia.
-   * Falls back to null when RPC is unavailable.
+   * Always returns a result — falls back to zero balances when RPC is unavailable.
    */
   agentPositions: publicProcedure.query(async () => {
-    const balances = await fetchOnChainBalances();
-    if (!balances) return null;
+    const balances = await fetchOnChainBalances() ?? ARB_SEPOLIA_TOKENS.map((t) => ({
+      symbol: t.symbol, balance: 0, valueUsd: 0, targetPct: t.targetPct, priceUsd: t.priceUsd,
+    }));
     const totalValueUsd = balances.reduce((s, b) => s + b.valueUsd, 0);
     return {
       wallet: AGENT_WALLET,
