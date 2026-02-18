@@ -4,6 +4,7 @@ export default defineConfig({
   title: 'Meridian',
   description: 'AI Agent Framework for DeFi — every chain, every protocol, one agent framework.',
   head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['meta', { name: 'og:type', content: 'website' }],
     ['meta', { name: 'og:title', content: 'Meridian — AI Agent Framework for DeFi' }],
     ['meta', { name: 'og:description', content: 'Build autonomous DeFi agents that sense, think, and act across any chain.' }],
