@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meridian — Autonomous Intelligence Layer for DeFi</title>
+  <meta name="description" content="An open-source framework for building AI agents that autonomously execute cross-chain DeFi strategies — with built-in financial reasoning, risk management, and agent collaboration." />
+  <meta property="og:title" content="Meridian — Autonomous Intelligence Layer for DeFi" />
+  <meta property="og:description" content="Open-source AI agent framework for DeFi. Cross-chain execution, LLM reasoning, agent collaboration." />
+  <meta property="og:url" content="https://meridianagents.xyz" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --bg-card: #0f0f1a;
+      --bg-card2: #13131f;
+      --border: rgba(255,255,255,0.07);
+      --border-bright: rgba(59,130,246,0.3);
+      --blue: #3b82f6;
+      --blue-dim: #1d4ed8;
+      --green: #10b981;
+      --green-dim: #059669;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Radial glow */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 600px;
+      background: radial-gradient(ellipse at center, rgba(59,130,246,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    section, nav, footer { position: relative; z-index: 1; }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      background: rgba(10,10,15,0.8);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 700;
+      font-size: 1.15rem;
+      text-decoration: none;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-brand .logo { font-size: 1.3rem; }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      background: var(--blue);
+      color: #fff !important;
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem !important;
+      transition: background 0.2s !important;
+    }
+
+    .nav-cta:hover { background: #2563eb !important; color: #fff !important; }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 6rem 2rem 5rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.25);
+      color: var(--green);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.3rem 0.85rem;
+      border-radius: 999px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero-logo {
+      font-size: 4.5rem;
+      display: block;
+      margin-bottom: 1.2rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 24px rgba(59,130,246,0.4));
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 6vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #f1f5f9 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.05rem, 2.5vw, 1.3rem);
+      color: var(--blue);
+      font-weight: 500;
+      margin-bottom: 1.25rem;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-desc {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 620px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.7;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.75rem 1.6rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.5), 0 4px 20px rgba(59,130,246,0.3);
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.6), 0 4px 28px rgba(59,130,246,0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-outline:hover {
+      color: var(--text);
+      border-color: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.04);
+      transform: translateY(-1px);
+    }
+
+    /* METRICS BAR */
+    .metrics-bar {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(16,185,129,0.04);
+      padding: 1rem 2rem;
+      overflow: hidden;
+    }
+
+    .metrics-inner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .metric-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 1.75rem;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .metric-item:last-child { border-right: none; }
+
+    .metric-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      flex-shrink: 0;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .metric-value {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: -0.01em;
+    }
+
+    .metric-label {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    /* SECTIONS */
+    .section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5rem 2rem;
+    }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-label::before {
+      content: '';
+      width: 20px;
+      height: 1px;
+      background: var(--blue);
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 540px;
+      line-height: 1.7;
+    }
+
+    /* HOW IT WORKS */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .step-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .step-card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-2px);
+    }
+
+    .step-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(59,130,246,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 6px;
+      background: rgba(59,130,246,0.15);
+      border: 1px solid rgba(59,130,246,0.3);
+      color: var(--blue);
+      font-size: 0.8rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+    }
+
+    .step-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    .step-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+
+    /* CODE BLOCKS */
+    .code-block {
+      background: #0d0d16;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: #c9d1d9;
+    }
+
+    .code-block .kw { color: #ff7b72; }
+    .code-block .fn { color: #d2a8ff; }
+    .code-block .str { color: #a5d6ff; }
+    .code-block .cm { color: #8b949e; }
+    .code-block .num { color: #79c0ff; }
+    .code-block .op { color: #ff7b72; }
+    .code-block .id { color: #e6edf3; }
+    .code-block .prop { color: #79c0ff; }
+
+    /* FEATURES */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .feature-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.6rem;
+    }
+
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ARCHITECTURE */
+    .arch-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 3rem;
+      margin-top: 3rem;
+    }
+
+    .arch-diagram {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 2;
+      overflow-x: auto;
+    }
+
+    .arch-layer {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin-bottom: 0;
+    }
+
+    .arch-box {
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--blue);
+      white-space: nowrap;
+      margin: 0.3rem;
+    }
+
+    .arch-box.green {
+      background: rgba(16,185,129,0.1);
+      border-color: rgba(16,185,129,0.25);
+      color: var(--green);
+    }
+
+    .arch-box.purple {
+      background: rgba(139,92,246,0.1);
+      border-color: rgba(139,92,246,0.25);
+      color: #a78bfa;
+    }
+
+    .arch-arrow {
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      margin: 0 0.25rem;
+    }
+
+    .arch-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin: 0.5rem 0;
+    }
+
+    .arch-connector {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 1rem;
+      margin: 0.2rem 0;
+    }
+
+    /* COMPARISON TABLE */
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 3rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    thead th {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,15,26,0.9);
+    }
+
+    thead th:first-child {
+      color: var(--text);
+    }
+
+    thead th.meridian-col {
+      color: var(--blue);
+      background: rgba(59,130,246,0.06);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+    tbody td {
+      padding: 0.9rem 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    tbody td:first-child {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    tbody td.meridian-col {
+      background: rgba(59,130,246,0.04);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .check { color: var(--green); font-size: 0.95rem; }
+    .cross { color: #ef4444; font-size: 0.88rem; }
+
+    /* CTA */
+    .cta-section {
+      text-align: center;
+      padding: 6rem 2rem;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .cta-section h2 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #f1f5f9 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cta-desc {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-bottom: 2.5rem;
+      line-height: 1.7;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-green {
+      background: var(--green);
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(16,185,129,0.4), 0 4px 20px rgba(16,185,129,0.25);
+    }
+
+    .btn-green:hover {
+      background: var(--green-dim);
+      transform: translateY(-1px);
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .footer-tagline {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .footer-tagline span {
+      width: 4px;
+      height: 4px;
+      background: var(--text-dim);
+      border-radius: 50%;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.88rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text-muted); }
+
+    .footer-copy {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    /* DIVIDER */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      nav { padding: 1rem; }
+      .nav-links { display: none; }
+
+      .steps,
+      .features-grid { grid-template-columns: 1fr; }
+
+      .metrics-inner { gap: 0; }
+      .metric-item { border-right: none; border-bottom: 1px solid var(--border); width: 50%; justify-content: center; }
+
+      .arch-section { padding: 1.75rem; }
+
+      .table-wrap { font-size: 0.78rem; }
+      thead th, tbody td { padding: 0.7rem 0.9rem; }
+    }
+
+    @media (max-width: 480px) {
+      .hero { padding: 4rem 1.25rem 3rem; }
+      .metric-item { width: 100%; }
+    }
+
+    /* SECTION SEPARATOR LINE */
+    .section-sep {
+      max-width: 1100px;
+      margin: 0 auto;
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-brand">
+    <span class="logo">🧭</span>
+    Meridian
+  </a>
+  <ul class="nav-links">
+    <li><a href="#how-it-works">How it Works</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="https://github.com/amitduabits/meridiandefi" target="_blank" rel="noopener">Docs</a></li>
+    <li><a href="https://app.meridianagents.xyz" class="nav-cta">Dashboard →</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <span>●</span> Live on Arbitrum Sepolia
+  </div>
+  <span class="hero-logo">🧭</span>
+  <h1>Meridian</h1>
+  <p class="hero-subtitle">The Autonomous Intelligence Layer for DeFi</p>
+  <p class="hero-desc">
+    An open-source framework for building AI agents that autonomously execute cross-chain DeFi strategies —
+    with built-in financial reasoning, risk management, and agent collaboration.
+  </p>
+  <div class="hero-buttons">
+    <a href="https://app.meridianagents.xyz" class="btn btn-primary">View Dashboard →</a>
+    <a href="https://github.com/amitduabits/meridiandefi" target="_blank" rel="noopener" class="btn btn-outline">GitHub ↗</a>
+  </div>
+</section>
+
+<!-- METRICS BAR -->
+<div class="metrics-bar">
+  <div class="metrics-inner">
+    <div class="metric-item">
+      <div class="metric-dot"></div>
+      <span class="metric-value">100+</span>
+      <span class="metric-label">Autonomous Trades</span>
+    </div>
+    <div class="metric-item">
+      <div class="metric-dot"></div>
+      <span class="metric-value">99.9%</span>
+      <span class="metric-label">Uptime</span>
+    </div>
+    <div class="metric-item">
+      <div class="metric-dot"></div>
+      <span class="metric-value">288</span>
+      <span class="metric-label">Tests Passing</span>
+    </div>
+    <div class="metric-item">
+      <div class="metric-dot"></div>
+      <span class="metric-value">47K+</span>
+      <span class="metric-label">Lines of Code</span>
+    </div>
+    <div class="metric-item">
+      <div class="metric-dot"></div>
+      <span class="metric-value">6</span>
+      <span class="metric-label">Example Agents</span>
+    </div>
+    <div class="metric-item">
+      <div class="metric-dot"></div>
+      <span class="metric-value">MIT</span>
+      <span class="metric-label">License</span>
+    </div>
+  </div>
+</div>
+
+<hr class="divider" />
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how-it-works">
+  <div class="section-label">Process</div>
+  <h2 class="section-title">From idea to autonomous agent in minutes</h2>
+  <p class="section-desc">
+    Meridian handles the complexity. You define the strategy — the framework handles execution, risk, and coordination.
+  </p>
+
+  <div class="steps">
+    <!-- Step 1 -->
+    <div class="step-card">
+      <div class="step-number">01</div>
+      <div class="step-title">Define Strategy</div>
+      <p class="step-desc">Use natural language, DSL, or TypeScript to describe what your agent should do.</p>
+      <div class="code-block"><span class="cm">// Natural language → strategy</span>
+<span class="kw">const</span> <span class="id">strategy</span> = <span class="kw">await</span> <span class="fn">translateStrategy</span>(<span class="str">"Rebalance portfolio
+when ETH drifts &gt;5% from target.
+Use Uniswap V3, max 0.3% slippage."</span>);
+
+<span class="cm">// Or use the built-in presets</span>
+<span class="kw">const</span> <span class="id">s</span> = <span class="fn">createRebalancerStrategy</span>({
+  <span class="prop">driftThreshold</span>: <span class="num">0.05</span>,
+  <span class="prop">targetAllocations</span>: {
+    <span class="str">ETH</span>: <span class="num">0.4</span>, <span class="str">USDC</span>: <span class="num">0.3</span>
+  }
+});</div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-card">
+      <div class="step-number">02</div>
+      <div class="step-title">Deploy Agent</div>
+      <p class="step-desc">Agents run autonomously with Sense → Think → Act → Reflect decision cycles.</p>
+      <div class="code-block"><span class="kw">const</span> <span class="id">agent</span> = <span class="kw">new</span> <span class="fn">Agent</span>({
+  <span class="prop">id</span>: <span class="str">"rebalancer-001"</span>,
+  <span class="prop">chains</span>: [<span class="num">421614</span>], <span class="cm">// Arbitrum</span>
+  <span class="prop">tickIntervalMs</span>: <span class="num">30_000</span>,
+  <span class="prop">dryRun</span>: <span class="kw">false</span>,
+}, { eventBus, sense, think, act });
+
+<span class="id">agent</span>.<span class="fn">setStrategy</span>(<span class="id">strategy</span>);
+<span class="kw">await</span> <span class="id">agent</span>.<span class="fn">start</span>();
+
+<span class="cm">// Sense → Think → Act → Reflect</span>
+<span class="cm">// loops automatically every 30s</span></div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-card">
+      <div class="step-number">03</div>
+      <div class="step-title">Monitor &amp; Scale</div>
+      <p class="step-desc">Real-time dashboard, circuit breakers, multi-agent collaboration out of the box.</p>
+      <div class="code-block"><span class="cm">// Subscribe to agent events</span>
+<span class="id">eventBus</span>.<span class="fn">on</span>(<span class="str">"agent:decision"</span>, (e) =&gt; {
+  <span class="id">console</span>.<span class="fn">log</span>(<span class="id">e</span>.<span class="prop">record</span>.<span class="prop">reasoning</span>);
+});
+
+<span class="cm">// Multi-agent team</span>
+<span class="kw">const</span> <span class="id">analyst</span> = <span class="kw">new</span> <span class="fn">MarketAnalyst</span>(<span class="id">bus</span>);
+<span class="kw">const</span> <span class="id">risk</span>    = <span class="kw">new</span> <span class="fn">RiskManager</span>();
+<span class="kw">const</span> <span class="id">exec</span>    = <span class="kw">new</span> <span class="fn">Executor</span>();
+
+<span class="cm">// Analyst → Risk → Executor pipeline</span></div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-sep" />
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">Capabilities</div>
+  <h2 class="section-title">Everything DeFi needs. Nothing it doesn't.</h2>
+  <p class="section-desc">
+    Built from the ground up for financial autonomy — not retrofitted from a general-purpose agent framework.
+  </p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🧠</span>
+      <div class="feature-title">DeFi-Native Reasoning</div>
+      <p class="feature-desc">
+        Not a chatbot with a wallet. Meridian agents understand liquidity depth, slippage, impermanent loss,
+        and gas optimization natively. Claude Sonnet handles trade reasoning; local LLMs handle real-time signals.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⛓️</span>
+      <div class="feature-title">Cross-Chain Execution</div>
+      <p class="feature-desc">
+        One agent, many chains. Unified connectors for Ethereum, Arbitrum, Base, Optimism, Polygon, Solana,
+        and more. Protocol adapters for Uniswap V3, Aave V3, Curve, Lido, Jupiter, and growing.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🤝</span>
+      <div class="feature-title">Agent Collaboration</div>
+      <p class="feature-desc">
+        Agents discover, negotiate, and pay each other via libp2p GossipSub and on-chain escrow.
+        An Analyst hires a Risk Manager, which delegates to an Executor — all trustless and verifiable.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🛡️</span>
+      <div class="feature-title">Risk Management</div>
+      <p class="feature-desc">
+        Pre-flight validator checks every transaction: position size, gas cost, slippage, contract approval,
+        daily loss limits, and simulation. Circuit breakers halt activity on anomalies automatically.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📐</span>
+      <div class="feature-title">Strategy DSL</div>
+      <p class="feature-desc">
+        Write strategies in natural language, a typed DSL, or pure TypeScript. The compiler validates,
+        sandboxes in isolated-vm, and backtests against historical DuckDB data before deployment.
+      </p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📊</span>
+      <div class="feature-title">Monitoring Dashboard</div>
+      <p class="feature-desc">
+        React 18 dashboard with real-time agent state, portfolio P&amp;L, transaction history,
+        risk metrics, and strategy performance. tRPC API, WebSocket updates, SIWE authentication.
+      </p>
+    </div>
+  </div>
+</section>
+
+<hr class="section-sep" />
+
+<!-- ARCHITECTURE -->
+<section class="section" id="architecture">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-title">8 purpose-built modules</h2>
+  <p class="section-desc">
+    Every layer is replaceable. Use your own LLM provider, chain connector, or memory backend.
+    The interfaces are stable; the implementations are swappable.
+  </p>
+
+  <div class="arch-section">
+    <div class="arch-row">
+      <div class="arch-box">Developer SDK</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Agent Runtime</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">LLM Layer</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Chain Connectors</div>
+    </div>
+    <div class="arch-connector">↕&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↕&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↕&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↕</div>
+    <div class="arch-row">
+      <div class="arch-box green">Strategy Engine</div>
+      <div class="arch-arrow">&nbsp;&nbsp;&nbsp;</div>
+      <div class="arch-box green">Memory System</div>
+      <div class="arch-arrow">&nbsp;&nbsp;&nbsp;</div>
+      <div class="arch-box green">Risk Management</div>
+      <div class="arch-arrow">&nbsp;&nbsp;&nbsp;</div>
+      <div class="arch-box green">Dashboard &amp; API</div>
+    </div>
+    <div class="arch-connector" style="text-align:left; padding-left: 3rem;">↕</div>
+    <div class="arch-row" style="justify-content: flex-start; padding-left: 1.5rem;">
+      <div class="arch-box purple">Agent Communication</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box purple">P2P GossipSub</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box purple">On-Chain Escrow</div>
+    </div>
+
+    <div style="margin-top: 2.5rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem;">
+      <div style="border-left: 2px solid rgba(59,130,246,0.4); padding-left: 1rem;">
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--blue); margin-bottom: 0.35rem;">SENSE</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">On-chain balances, prices, gas — feeds MarketSnapshot to agent</div>
+      </div>
+      <div style="border-left: 2px solid rgba(59,130,246,0.4); padding-left: 1rem;">
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--blue); margin-bottom: 0.35rem;">THINK</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Claude Sonnet reasons about portfolio state; strategy DSL fires rules</div>
+      </div>
+      <div style="border-left: 2px solid rgba(16,185,129,0.4); padding-left: 1rem;">
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--green); margin-bottom: 0.35rem;">ACT</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Pre-flight risk check, simulate, submit transaction to chain</div>
+      </div>
+      <div style="border-left: 2px solid rgba(16,185,129,0.4); padding-left: 1rem;">
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--green); margin-bottom: 0.35rem;">REFLECT</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Store outcome in episodic memory, update semantic embeddings</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-sep" />
+
+<!-- COMPARISON -->
+<section class="section" id="comparison">
+  <div class="section-label">Comparison</div>
+  <h2 class="section-title">Purpose-built for DeFi</h2>
+  <p class="section-desc">
+    General-purpose agent frameworks require extensive customization to handle on-chain execution safely.
+    Meridian ships with everything DeFi needs out of the box.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th class="meridian-col">Meridian</th>
+          <th>ElizaOS</th>
+          <th>GOAT</th>
+          <th>Virtuals</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>DeFi-native reasoning</td>
+          <td class="meridian-col"><span class="check">✓</span> Built-in</td>
+          <td><span class="cross">✗</span> Social-first</td>
+          <td><span class="cross">✗</span> Stateless</td>
+          <td><span class="cross">✗</span> Token-first</td>
+        </tr>
+        <tr>
+          <td>Multi-chain execution</td>
+          <td class="meridian-col"><span class="check">✓</span> 7+ chains</td>
+          <td>Limited</td>
+          <td>Limited</td>
+          <td>Base only</td>
+        </tr>
+        <tr>
+          <td>Agent collaboration</td>
+          <td class="meridian-col"><span class="check">✓</span> P2P + escrow</td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Risk management</td>
+          <td class="meridian-col"><span class="check">✓</span> Circuit breakers</td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Strategy DSL</td>
+          <td class="meridian-col"><span class="check">✓</span> NL + DSL + code</td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Open source</td>
+          <td class="meridian-col"><span class="check">✓</span> MIT</td>
+          <td><span class="check">✓</span> MIT</td>
+          <td><span class="check">✓</span> MIT</td>
+          <td>Partial</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="section-sep" />
+
+<!-- CTA -->
+<div class="cta-section">
+  <h2>Start building today</h2>
+  <p class="cta-desc">
+    Open source, MIT licensed. Run the demo in under 5 minutes.<br />
+    No sign-up, no API keys required for dry-run mode.
+  </p>
+  <div class="cta-buttons">
+    <a href="https://github.com/amitduabits/meridiandefi/tree/main/docs" target="_blank" rel="noopener" class="btn btn-green">Start Building →</a>
+    <a href="https://app.meridianagents.xyz" class="btn btn-primary">View Live Dashboard</a>
+    <a href="https://github.com/amitduabits/meridiandefi" target="_blank" rel="noopener" class="btn btn-outline">⭐ Star on GitHub</a>
+    <a href="https://twitter.com/MeridianAgents" target="_blank" rel="noopener" class="btn btn-outline">Follow @MeridianAgents</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <p class="footer-tagline">
+      Supported by blockchain ecosystem grants
+      <span></span>
+      Built by infrastructure engineers
+      <span></span>
+      Open source
+      <span></span>
+      Zero VC
+    </p>
+    <div class="footer-links">
+      <a href="https://github.com/amitduabits/meridiandefi" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/amitduabits/meridiandefi/tree/main/docs" target="_blank" rel="noopener">Docs</a>
+      <a href="https://app.meridianagents.xyz">Dashboard</a>
+      <a href="https://twitter.com/MeridianAgents" target="_blank" rel="noopener">Twitter</a>
+      <a href="https://discord.gg/meridian" target="_blank" rel="noopener">Discord</a>
+    </div>
+    <p class="footer-copy">© 2026 Meridian. MIT License. meridianagents.xyz</p>
+  </div>
+</footer>
+
+</body>
+</html>
